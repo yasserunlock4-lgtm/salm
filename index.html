@@ -20,7 +20,7 @@
     <div id="loading-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center">
         <div class="text-center">
             <div class="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p id="loading-text" class="font-bold text-amber-500">جاري التحميل...</p>
+            <p class="font-bold text-amber-500">جاري التحميل...</p>
         </div>
     </div>
 
@@ -91,46 +91,14 @@
         </button>
     </nav>
 
-    <!-- Firebase SDKs and App Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- نقطة بداية التطبيق ---
-        async function main( ) {
-            try {
-                // 1. جلب الإعدادات بأمان من الخادم
-                const response = await fetch('/api/config');
-                if (!response.ok) {
-                    const errorBody = await response.json();
-                    throw new Error(`فشل جلب الإعدادات: ${errorBody.error || response.statusText}`);
-                }
-                const firebaseConfig = await response.json();
-
-                // 2. تهيئة Firebase باستخدام الإعدادات التي تم جلبها
-                const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
-                const db = getFirestore(app);
-                
-                // 3. تشغيل التطبيق بعد نجاح الاتصال
-                runApp(auth, db);
-
-            } catch (error) {
-                console.error("Could not initialize Firebase:", error);
-                document.getElementById('loading-text').innerText = 'فشل الاتصال بالخادم. تأكد من إضافة متغيرات البيئة في Vercel.';
-                document.getElementById('loading-text').classList.replace('text-amber-500', 'text-red-500');
-            }
-        }
-
-        // --- الدالة التي تحتوي على كل منطق التطبيق ---
-        function runApp(auth, db) {
-            let currentUser = null;
+    <!-- App Logic (No Firebase) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- تعريف المتغيرات والثوابت ---
             let userData = { balance: 0, lastOpenTime: 0, completedTasks: [] };
-            const appId = 'salem-daaboul-app';
+            const storageKey = 'salemDaaboulGameData';
 
-            // ثوابت التطبيق
-            const COOLDOWN = 10 * 60 * 1000;
+            const COOLDOWN = 10 * 60 * 1000; // 10 دقائق
             const MIN_WITHDRAW = 500.00;
             const PRIZES = [
                 { name: "0.01$", val: 0.01, icon: "🪙" }, { name: "0.05$", val: 0.05, icon: "💵" },
@@ -147,8 +115,20 @@
                 { id: 'cash', name: 'سحب كاش للعنوان', price: 500, icon: '🏠' }
             ];
 
+            // --- دوال التعامل مع التخزين المحلي ---
+            function loadData( ) {
+                const savedData = localStorage.getItem(storageKey);
+                if (savedData) {
+                    userData = JSON.parse(savedData);
+                }
+            }
+
+            function saveData() {
+                localStorage.setItem(storageKey, JSON.stringify(userData));
+            }
+
             // --- ربط الدوال بالكائن window لتكون متاحة في HTML ---
-            window.showSection = (name ) => {
+            window.showSection = (name) => {
                 document.querySelectorAll('main, section').forEach(s => s.classList.add('hidden'));
                 document.getElementById(`section-${name}`).classList.remove('hidden');
                 document.querySelectorAll('nav button').forEach(b => {
@@ -159,40 +139,47 @@
 
             window.closeModal = () => document.getElementById('prize-modal').classList.add('hidden');
 
-            window.handleOpen = async () => {
-                if (!currentUser || (Date.now() - (userData.lastOpenTime || 0) < COOLDOWN)) return;
+            window.handleOpen = () => {
+                if (Date.now() - userData.lastOpenTime < COOLDOWN) return;
+                
                 const prize = PRIZES[Math.floor(Math.random() * PRIZES.length)];
-                const userRef = doc(db, 'artifacts', appId, 'users', currentUser.uid);
-                await updateDoc(userRef, { balance: increment(prize.val), lastOpenTime: Date.now() });
+                
+                userData.balance += prize.val;
+                userData.lastOpenTime = Date.now();
+                
+                saveData();
+                updateUI();
                 showModal(prize);
             };
 
-            window.doTask = async (id, bonus, url) => {
+            window.doTask = (id, bonus, url) => {
                 if (userData.completedTasks?.includes(id)) return;
+                
                 window.open(url, '_blank');
-                setTimeout(async () => {
-                    const userRef = doc(db, 'artifacts', appId, 'users', currentUser.uid);
-                    await updateDoc(userRef, {
-                        balance: increment(bonus),
-                        completedTasks: [...(userData.completedTasks || []), id]
-                    });
-                }, 3000);
+                
+                userData.balance += bonus;
+                userData.completedTasks.push(id);
+                
+                saveData();
+                updateUI();
             };
 
-            window.requestWithdraw = async (price, name) => {
+            window.requestWithdraw = (price, name) => {
                 if (userData.balance < MIN_WITHDRAW) {
                     alert(`عذراً! رصيدك الحالي هو ${userData.balance.toFixed(2)}$، تحتاج إلى ${MIN_WITHDRAW}$ كحد أدنى للسحب.`);
                     return;
                 }
                 if (confirm(`هل أنت متأكد من سحب ${price}$؟`)) {
-                    const userRef = doc(db, 'artifacts', appId, 'users', currentUser.uid);
-                    await updateDoc(userRef, { balance: increment(-price) });
+                    userData.balance -= price;
+                    saveData();
+                    updateUI();
                     alert('تم تقديم طلبك! سيتم التواصل معك لإرسال الجائزة.');
-                    window.open(`https://t.me/your_user?text=طلب سحب: ${name} من ID: ${currentUser.uid}` );
+                    // يمكنك تغيير 'your_user' إلى معرف المستخدم الخاص بك على تليجرام
+                    window.open(`https://t.me/your_user?text=طلب سحب: ${name}` );
                 }
             };
 
-            // --- دوال التطبيق الداخلية ---
+            // --- دوال تحديث الواجهة ---
             function showModal(prize) {
                 document.getElementById('modal-icon').innerText = prize.icon;
                 document.getElementById('modal-status').innerText = prize.val > 0 ? "مبروك!" : "يا للأسف!";
@@ -244,33 +231,18 @@
                 container.innerHTML = STORE.map(s => `<div class="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center"><div class="flex items-center gap-3"><span class="text-3xl">${s.icon}</span><span class="font-bold text-sm">${s.name}</span></div><button onclick="requestWithdraw(${s.price}, '${s.name}')" class="bg-green-600 text-white px-5 py-2 rounded-xl text-[10px] font-black">${s.price.toFixed(2)}$</button></div>`).join('');
             }
 
-            // --- بدء تشغيل منطق التطبيق ---
-            document.getElementById('open-packet-btn').onclick = () => window.handleOpen();
-            document.getElementById('main-action-btn').onclick = () => window.handleOpen();
-            setInterval(checkTimer, 1000);
+            // --- نقطة بداية التطبيق ---
+            function init() {
+                loadData();
+                updateUI();
+                document.getElementById('open-packet-btn').onclick = window.handleOpen;
+                document.getElementById('main-action-btn').onclick = window.handleOpen;
+                setInterval(checkTimer, 1000);
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
 
-            signInAnonymously(auth).catch(console.error);
-
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    const userRef = doc(db, 'artifacts', appId, 'users', user.uid);
-                    onSnapshot(userRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            userData = docSnap.data();
-                        } else {
-                            setDoc(userRef, { balance: 0, lastOpenTime: 0, completedTasks: [], uid: user.uid });
-                        }
-                        updateUI();
-                        document.getElementById('loading-screen').classList.add('hidden');
-                    });
-                }
-            });
-        }
-
-        // --- استدعاء الدالة الرئيسية لبدء كل شيء ---
-        main();
-
+            init();
+        });
     </script>
 </body>
 </html>
