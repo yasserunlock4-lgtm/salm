@@ -1,8 +1,7 @@
-// الملف: api/config.js
+// المسار الصحيح: /api/config.js
 
 export default function handler(request, response) {
   // هذه الدالة تقرأ متغيرات البيئة من Vercel وترسلها للواجهة الأمامية
-  // هذا يضمن أن مفاتيحك لا تظهر في الكود المرفوع على GitHub
   const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
     authDomain: process.env.FIREBASE_AUTH_DOMAIN,
