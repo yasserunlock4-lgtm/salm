@@ -29,9 +29,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==================================================================
-        // الصق إعدادات Firebase الخاصة بك هنا
-        // ==================================================================
         const firebaseConfig = {
           apiKey: "AIzaSyD6Jdy-USR8Iy6qvFRGpVQY5qIjSxa-Fc0",
           authDomain: "salm-3521d.firebaseapp.com",
@@ -40,7 +37,6 @@
           messagingSenderId: "897813694871",
           appId: "1:897813694871:web:89c989960a8d620c4d1cd2"
         };
-        // ==================================================================
 
         try {
             const app = initializeApp(firebaseConfig );
@@ -50,17 +46,10 @@
         } catch (error) {
             console.error("Initialization Error:", error);
             document.getElementById('loading-text').innerText = 'فشل الاتصال بالخادم.';
-            document.getElementById('loading-text').classList.replace('text-amber-500', 'text-red-500');
         }
 
         function runApp(auth, db) {
-            // ==================================================================
-            // !! التعديل الجديد هنا !!
-            // هذا السطر يجعل 'db' متاحًا للـ Console
-            // ==================================================================
-            window.db = db;
-            // ==================================================================
-
+            window.db = db; // For debugging from console
             let currentUser = null;
             let userData = { balance: 0, lastOpenTime: 0, completedTasks: [] };
             let appSettings = { tasks: [], prizes: [] };
@@ -77,7 +66,13 @@
             window.closeModal = () => document.getElementById('prize-modal').classList.add('hidden');
 
             window.handleOpen = () => {
-                if (Date.now() - userData.lastOpenTime < COOLDOWN || appSettings.prizes.length === 0) return;
+                if (Date.now() - userData.lastOpenTime < COOLDOWN) {
+                    return; // المؤقت لم ينته
+                }
+                if (appSettings.prizes.length === 0) {
+                    alert("يتم تحميل الجوائز، يرجى المحاولة بعد لحظات.");
+                    return; // قائمة الجوائز لم تحمل بعد
+                }
                 const prize = appSettings.prizes[Math.floor(Math.random() * appSettings.prizes.length)];
                 userData.balance += prize.val;
                 userData.lastOpenTime = Date.now();
@@ -87,27 +82,8 @@
                 showModal(prize);
             };
 
-            window.doTask = (id, bonus, url) => {
-                if (userData.completedTasks?.includes(id)) return;
-                window.open(url, '_blank');
-                userData.balance += bonus;
-                userData.completedTasks.push(id);
-                saveLocalData();
-                syncRemoteData();
-                updateUI();
-            };
-
-            window.requestWithdraw = (price, name) => {
-                if (userData.balance < MIN_WITHDRAW) { alert(`رصيدك الحالي ${userData.balance.toFixed(2)}$، الحد الأدنى للسحب ${MIN_WITHDRAW}$`); return; }
-                if (confirm(`هل أنت متأكد من سحب ${price}$؟`)) {
-                    userData.balance -= price;
-                    saveLocalData();
-                    syncRemoteData();
-                    updateUI();
-                    alert('تم تقديم طلبك!');
-                    window.open(`https://t.me/your_user?text=طلب سحب: ${name} من ID: ${currentUser.uid}` );
-                }
-            };
+            window.doTask = (id, bonus, url) => { if (userData.completedTasks?.includes(id)) return; window.open(url, '_blank'); userData.balance += bonus; userData.completedTasks.push(id); saveLocalData(); syncRemoteData(); updateUI(); };
+            window.requestWithdraw = (price, name) => { if (userData.balance < MIN_WITHDRAW) { alert(`رصيدك الحالي ${userData.balance.toFixed(2)}$، الحد الأدنى للسحب ${MIN_WITHDRAW}$`); return; } if (confirm(`هل أنت متأكد من سحب ${price}$؟`)) { userData.balance -= price; saveLocalData(); syncRemoteData(); updateUI(); alert('تم تقديم طلبك!'); window.open(`https://t.me/your_user?text=طلب سحب: ${name} من ID: ${currentUser.uid}` ); } };
 
             function showModal(prize) { document.getElementById('modal-icon').innerText = prize.icon; document.getElementById('modal-status').innerText = prize.val > 0 ? "مبروك!" : "يا للأسف!"; document.getElementById('modal-prize-name').innerText = prize.name; document.getElementById('prize-modal').classList.remove('hidden'); }
             function updateUI() { document.getElementById('balance-display').innerText = `${(userData.balance || 0).toFixed(2)}$`; renderTasks(); renderStore(); checkTimer(); }
@@ -121,7 +97,11 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         currentUser = user;
-                        document.getElementById('loading-text').innerText = 'جاري جلب الإعدادات...';
+                        
+                        const loadingPhrases = ["جاري تحضير أكياس الجبس... 😋", "تلميع العملات الذهبية... ✨", "دقائق وتصبح من الأثرياء... 💰", "هل أنت مستعد للمفاجأة؟ 👀", "جاري البحث عن أكبر جائزة... 🎁"];
+                        const randomPhrase = loadingPhrases[Math.floor(Math.random() * loadingPhrases.length)];
+                        document.getElementById('loading-text').innerText = randomPhrase;
+
                         try {
                             const settingsSnap = await getDoc(doc(db, "configs", "app-settings"));
                             if (settingsSnap.exists()) { appSettings = settingsSnap.data(); } else { console.error("مستند الإعدادات 'app-settings' غير موجود!"); document.getElementById('loading-text').innerText = 'خطأ في الإعدادات.'; return; }
@@ -135,6 +115,11 @@
                     }
                 });
             }
+            
+            // ربط الأحداث الرئيسية
+            document.getElementById('open-packet-btn').onclick = () => window.handleOpen();
+            document.getElementById('main-action-btn').onclick = () => window.handleOpen();
+
             initializeUserSession();
         }
     </script>
