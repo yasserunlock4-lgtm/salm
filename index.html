@@ -30,7 +30,6 @@
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==================================================================
-        // !! تعديل هام !!
         // الصق إعدادات Firebase الخاصة بك هنا
         // ==================================================================
         const firebaseConfig = {
@@ -43,7 +42,6 @@
         };
         // ==================================================================
 
-        // --- نقطة بداية التطبيق ---
         try {
             const app = initializeApp(firebaseConfig );
             const auth = getAuth(app);
@@ -56,6 +54,13 @@
         }
 
         function runApp(auth, db) {
+            // ==================================================================
+            // !! التعديل الجديد هنا !!
+            // هذا السطر يجعل 'db' متاحًا للـ Console
+            // ==================================================================
+            window.db = db;
+            // ==================================================================
+
             let currentUser = null;
             let userData = { balance: 0, lastOpenTime: 0, completedTasks: [] };
             let appSettings = { tasks: [], prizes: [] };
