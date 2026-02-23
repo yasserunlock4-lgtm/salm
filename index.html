@@ -16,233 +16,122 @@
 </head>
 <body class="gradient-bg min-h-screen text-slate-100 pb-28">
 
-    <!-- واجهة التحميل -->
-    <div id="loading-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center">
-        <div class="text-center">
-            <div class="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p class="font-bold text-amber-500">جاري التحميل...</p>
-        </div>
-    </div>
+    <div id="loading-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center"><div class="text-center"><div class="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p id="loading-text" class="font-bold text-amber-500">جاري الاتصال...</p></div></div>
+    <header class="p-4 max-w-md mx-auto flex justify-between items-center mt-2"><div class="bg-slate-900 rounded-2xl px-5 py-2 border border-green-500/20 shadow-xl flex flex-col items-center"><span class="text-[10px] text-slate-400 font-bold">الرصيد</span><span id="balance-display" class="font-black text-green-500 text-lg">0.00$</span></div><div class="bg-slate-900 rounded-2xl px-5 py-2 border border-blue-500/20 shadow-xl flex flex-col items-center"><span class="text-[10px] text-slate-400 font-bold">المؤقت</span><span id="timer-display" class="font-black text-blue-400 text-lg">متاح</span></div></header>
+    <main id="section-home" class="max-w-md mx-auto flex flex-col items-center p-4"><img src="https://i.ibb.co/3yxmRCHd/1000124039.jpg" class="w-24 h-24 rounded-full border-4 border-amber-500 shadow-2xl mb-4" alt="سالم دعبول"><h1 class="text-2xl font-black text-amber-500 mb-1">مسابقات سالم دعبول</h1><p class="text-[10px] text-slate-400 mb-10 text-center">افتح الكيس كل 10 دقائق واجمع السنتات</p><div id="open-packet-btn" class="cursor-pointer transition-all duration-300 packet-animation hover:scale-105"><div class="w-40 h-52 bg-gradient-to-b from-amber-800 to-amber-950 border-4 border-amber-500 rounded-[2.5rem] flex flex-col items-center justify-center shadow-2xl relative"><div class="absolute top-0 w-full h-8 bg-amber-700/30 rounded-t-[2.1rem]"></div><span class="text-4xl font-black text-amber-500">جبس</span></div></div><button id="main-action-btn" class="mt-10 w-full bg-amber-500 text-slate-950 py-4 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">افتح الكيس الآن</button></main>
+    <section id="section-tasks" class="max-w-md mx-auto p-4 hidden"><h2 class="text-2xl font-black mb-6 text-center text-amber-500">مركز المهام</h2><div id="tasks-container" class="space-y-4"></div></section>
+    <section id="section-store" class="max-w-md mx-auto p-4 hidden"><h2 class="text-2xl font-black mb-2 text-center text-green-500">طلب سحب</h2><p class="text-center text-xs text-slate-400 mb-8 font-bold">الحد الأدنى للسحب: 500.00$</p><div id="store-container" class="space-y-4"></div></section>
+    <div id="prize-modal" class="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-6 hidden"><div class="bg-slate-900 border-2 border-amber-500 p-10 rounded-[3rem] text-center max-w-xs w-full shadow-2xl"><div id="modal-icon" class="text-7xl mb-6">🪙</div><h2 id="modal-status" class="text-xl font-black text-white mb-2">مبروك!</h2><p id="modal-prize-name" class="text-4xl font-black text-amber-500 mb-8">0.05$</p><button onclick="closeModal( )" class="w-full bg-amber-500 text-black py-4 rounded-2xl font-black">استمرار</button></div></div>
+    <nav class="fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-2 flex justify-around shadow-2xl z-50"><button onclick="showSection('home')" id="nav-home" class="flex flex-col items-center p-3 rounded-2xl nav-active transition-all"><span class="text-xl">🏠</span><span class="text-[10px] font-bold">الرئيسية</span></button><button onclick="showSection('tasks')" id="nav-tasks" class="flex flex-col items-center p-3 rounded-2xl text-slate-500 transition-all"><span class="text-xl">📋</span><span class="text-[10px] font-bold">المهام</span></button><button onclick="showSection('store')" id="nav-store" class="flex flex-col items-center p-3 rounded-2xl text-slate-500 transition-all"><span class="text-xl">💵</span><span class="text-[10px] font-bold">السحب</span></button></nav>
 
-    <!-- الهيدر (الرصيد والمؤقت) -->
-    <header class="p-4 max-w-md mx-auto flex justify-between items-center mt-2">
-        <div class="bg-slate-900 rounded-2xl px-5 py-2 border border-green-500/20 shadow-xl flex flex-col items-center">
-            <span class="text-[10px] text-slate-400 font-bold">الرصيد</span>
-            <span id="balance-display" class="font-black text-green-500 text-lg">0.00$</span>
-        </div>
-        <div class="bg-slate-900 rounded-2xl px-5 py-2 border border-blue-500/20 shadow-xl flex flex-col items-center">
-            <span class="text-[10px] text-slate-400 font-bold">المؤقت</span>
-            <span id="timer-display" class="font-black text-blue-400 text-lg">متاح</span>
-        </div>
-    </header>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <!-- المحتوى الرئيسي (Home) -->
-    <main id="section-home" class="max-w-md mx-auto flex flex-col items-center p-4">
-        <img src="https://i.ibb.co/3yxmRCHd/1000124039.jpg" class="w-24 h-24 rounded-full border-4 border-amber-500 shadow-2xl mb-4" alt="سالم دعبول">
-        <h1 class="text-2xl font-black text-amber-500 mb-1">مسابقات سالم دعبول</h1>
-        <p class="text-[10px] text-slate-400 mb-10 text-center">افتح الكيس كل 10 دقائق واجمع السنتات</p>
-        <div id="open-packet-btn" class="cursor-pointer transition-all duration-300 packet-animation hover:scale-105">
-            <div class="w-40 h-52 bg-gradient-to-b from-amber-800 to-amber-950 border-4 border-amber-500 rounded-[2.5rem] flex flex-col items-center justify-center shadow-2xl relative">
-                <div class="absolute top-0 w-full h-8 bg-amber-700/30 rounded-t-[2.1rem]"></div>
-                <span class="text-4xl font-black text-amber-500">جبس</span>
-            </div>
-        </div>
-        <button id="main-action-btn" class="mt-10 w-full bg-amber-500 text-slate-950 py-4 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">
-            افتح الكيس الآن
-        </button>
-    </main>
+        // ==================================================================
+        // !! تعديل هام !!
+        // الصق إعدادات Firebase الخاصة بك هنا
+        // ==================================================================
+        const firebaseConfig = {
+          apiKey: "AIzaSyD6Jdy-USR8Iy6qvFRGpVQY5qIjSxa-Fc0",
+          authDomain: "salm-3521d.firebaseapp.com",
+          projectId: "salm-3521d",
+          storageBucket: "salm-3521d.appspot.com",
+          messagingSenderId: "897813694871",
+          appId: "1:897813694871:web:89c989960a8d620c4d1cd2"
+        };
+        // ==================================================================
 
-    <!-- قسم المهام -->
-    <section id="section-tasks" class="max-w-md mx-auto p-4 hidden">
-        <h2 class="text-2xl font-black mb-6 text-center text-amber-500">مركز المهام</h2>
-        <div id="tasks-container" class="space-y-4"></div>
-    </section>
+        // --- نقطة بداية التطبيق ---
+        try {
+            const app = initializeApp(firebaseConfig );
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            runApp(auth, db);
+        } catch (error) {
+            console.error("Initialization Error:", error);
+            document.getElementById('loading-text').innerText = 'فشل الاتصال بالخادم.';
+            document.getElementById('loading-text').classList.replace('text-amber-500', 'text-red-500');
+        }
 
-    <!-- قسم السحب (Store ) -->
-    <section id="section-store" class="max-w-md mx-auto p-4 hidden">
-        <h2 class="text-2xl font-black mb-2 text-center text-green-500">طلب سحب</h2>
-        <p class="text-center text-xs text-slate-400 mb-8 font-bold">الحد الأدنى للسحب: 500.00$</p>
-        <div id="store-container" class="space-y-4"></div>
-    </section>
-
-    <!-- نافذة الجائزة (Popup) -->
-    <div id="prize-modal" class="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-6 hidden">
-        <div class="bg-slate-900 border-2 border-amber-500 p-10 rounded-[3rem] text-center max-w-xs w-full shadow-2xl">
-            <div id="modal-icon" class="text-7xl mb-6">🪙</div>
-            <h2 id="modal-status" class="text-xl font-black text-white mb-2">مبروك!</h2>
-            <p id="modal-prize-name" class="text-4xl font-black text-amber-500 mb-8">0.05$</p>
-            <button onclick="closeModal()" class="w-full bg-amber-500 text-black py-4 rounded-2xl font-black">استمرار</button>
-        </div>
-    </div>
-
-    <!-- التنقل السفلي -->
-    <nav class="fixed bottom-6 left-6 right-6 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-2 flex justify-around shadow-2xl z-50">
-        <button onclick="showSection('home')" id="nav-home" class="flex flex-col items-center p-3 rounded-2xl nav-active transition-all">
-            <span class="text-xl">🏠</span>
-            <span class="text-[10px] font-bold">الرئيسية</span>
-        </button>
-        <button onclick="showSection('tasks')" id="nav-tasks" class="flex flex-col items-center p-3 rounded-2xl text-slate-500 transition-all">
-            <span class="text-xl">📋</span>
-            <span class="text-[10px] font-bold">المهام</span>
-        </button>
-        <button onclick="showSection('store')" id="nav-store" class="flex flex-col items-center p-3 rounded-2xl text-slate-500 transition-all">
-            <span class="text-xl">💵</span>
-            <span class="text-[10px] font-bold">السحب</span>
-        </button>
-    </nav>
-
-    <!-- App Logic (No Firebase) -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- تعريف المتغيرات والثوابت ---
+        function runApp(auth, db) {
+            let currentUser = null;
             let userData = { balance: 0, lastOpenTime: 0, completedTasks: [] };
+            let appSettings = { tasks: [], prizes: [] };
             const storageKey = 'salemDaaboulGameData';
-
-            const COOLDOWN = 10 * 60 * 1000; // 10 دقائق
+            const COOLDOWN = 10 * 60 * 1000;
             const MIN_WITHDRAW = 500.00;
-            const PRIZES = [
-                { name: "0.01$", val: 0.01, icon: "🪙" }, { name: "0.05$", val: 0.05, icon: "💵" },
-                { name: "0.10$", val: 0.10, icon: "💰" }, { name: "حظ أوفر", val: 0, icon: "😅" },
-                { name: "حظ أوفر", val: 0, icon: "🍂" }
-            ];
-            const TASKS = [
-                { id: 'tg', name: 'قناة التليجرام', bonus: 0.50, icon: '📢', url: 'https://t.me/your_channel' },
-                { id: 'ig', name: 'إنستقرام سالم', bonus: 0.25, icon: '📸', url: 'https://instagram.com/your_account' }
-            ];
-            const STORE = [
-                { id: 'asia', name: 'رصيد آسيا سيل', price: 500, icon: '📲' },
-                { id: 'zain', name: 'رصيد زين العراق', price: 500, icon: '📱' },
-                { id: 'cash', name: 'سحب كاش للعنوان', price: 500, icon: '🏠' }
-            ];
+            const STORE = [{ id: 'asia', name: 'رصيد آسيا سيل', price: 500, icon: '📲' }, { id: 'zain', name: 'رصيد زين العراق', price: 500, icon: '📱' }];
 
-            // --- دوال التعامل مع التخزين المحلي ---
-            function loadData( ) {
-                const savedData = localStorage.getItem(storageKey);
-                if (savedData) {
-                    userData = JSON.parse(savedData);
-                }
-            }
+            function loadLocalData() { const d = localStorage.getItem(storageKey); if (d) userData = JSON.parse(d); }
+            function saveLocalData() { localStorage.setItem(storageKey, JSON.stringify(userData)); }
+            async function syncRemoteData() { if (!currentUser) return; await setDoc(doc(db, "users", currentUser.uid), { balance: userData.balance, uid: currentUser.uid, lastUpdate: new Date().toISOString() }, { merge: true }); }
 
-            function saveData() {
-                localStorage.setItem(storageKey, JSON.stringify(userData));
-            }
-
-            // --- ربط الدوال بالكائن window لتكون متاحة في HTML ---
-            window.showSection = (name) => {
-                document.querySelectorAll('main, section').forEach(s => s.classList.add('hidden'));
-                document.getElementById(`section-${name}`).classList.remove('hidden');
-                document.querySelectorAll('nav button').forEach(b => {
-                    b.classList.remove('nav-active', 'text-slate-500');
-                    b.id === `nav-${name}` ? b.classList.add('nav-active') : b.classList.add('text-slate-500');
-                });
-            };
-
+            window.showSection = (name) => { document.querySelectorAll('main, section').forEach(s => s.classList.add('hidden')); document.getElementById(`section-${name}`).classList.remove('hidden'); document.querySelectorAll('nav button').forEach(b => { b.classList.remove('nav-active', 'text-slate-500'); b.id === `nav-${name}` ? b.classList.add('nav-active') : b.classList.add('text-slate-500'); }); };
             window.closeModal = () => document.getElementById('prize-modal').classList.add('hidden');
 
             window.handleOpen = () => {
-                if (Date.now() - userData.lastOpenTime < COOLDOWN) return;
-                
-                const prize = PRIZES[Math.floor(Math.random() * PRIZES.length)];
-                
+                if (Date.now() - userData.lastOpenTime < COOLDOWN || appSettings.prizes.length === 0) return;
+                const prize = appSettings.prizes[Math.floor(Math.random() * appSettings.prizes.length)];
                 userData.balance += prize.val;
                 userData.lastOpenTime = Date.now();
-                
-                saveData();
+                saveLocalData();
+                syncRemoteData();
                 updateUI();
                 showModal(prize);
             };
 
             window.doTask = (id, bonus, url) => {
                 if (userData.completedTasks?.includes(id)) return;
-                
                 window.open(url, '_blank');
-                
                 userData.balance += bonus;
                 userData.completedTasks.push(id);
-                
-                saveData();
+                saveLocalData();
+                syncRemoteData();
                 updateUI();
             };
 
             window.requestWithdraw = (price, name) => {
-                if (userData.balance < MIN_WITHDRAW) {
-                    alert(`عذراً! رصيدك الحالي هو ${userData.balance.toFixed(2)}$، تحتاج إلى ${MIN_WITHDRAW}$ كحد أدنى للسحب.`);
-                    return;
-                }
+                if (userData.balance < MIN_WITHDRAW) { alert(`رصيدك الحالي ${userData.balance.toFixed(2)}$، الحد الأدنى للسحب ${MIN_WITHDRAW}$`); return; }
                 if (confirm(`هل أنت متأكد من سحب ${price}$؟`)) {
                     userData.balance -= price;
-                    saveData();
+                    saveLocalData();
+                    syncRemoteData();
                     updateUI();
-                    alert('تم تقديم طلبك! سيتم التواصل معك لإرسال الجائزة.');
-                    // يمكنك تغيير 'your_user' إلى معرف المستخدم الخاص بك على تليجرام
-                    window.open(`https://t.me/your_user?text=طلب سحب: ${name}` );
+                    alert('تم تقديم طلبك!');
+                    window.open(`https://t.me/your_user?text=طلب سحب: ${name} من ID: ${currentUser.uid}` );
                 }
             };
 
-            // --- دوال تحديث الواجهة ---
-            function showModal(prize) {
-                document.getElementById('modal-icon').innerText = prize.icon;
-                document.getElementById('modal-status').innerText = prize.val > 0 ? "مبروك!" : "يا للأسف!";
-                document.getElementById('modal-prize-name').innerText = prize.name;
-                document.getElementById('prize-modal').classList.remove('hidden');
-            }
+            function showModal(prize) { document.getElementById('modal-icon').innerText = prize.icon; document.getElementById('modal-status').innerText = prize.val > 0 ? "مبروك!" : "يا للأسف!"; document.getElementById('modal-prize-name').innerText = prize.name; document.getElementById('prize-modal').classList.remove('hidden'); }
+            function updateUI() { document.getElementById('balance-display').innerText = `${(userData.balance || 0).toFixed(2)}$`; renderTasks(); renderStore(); checkTimer(); }
+            function checkTimer() { const now = Date.now(), diff = now - (userData.lastOpenTime || 0), remaining = Math.max(0, COOLDOWN - diff), btn = document.getElementById('main-action-btn'), packet = document.getElementById('open-packet-btn'); if (remaining > 0) { const mins = Math.floor(remaining / 60000), secs = Math.floor((remaining % 60000) / 1000), timeStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`; document.getElementById('timer-display').innerText = timeStr; document.getElementById('timer-display').className = "font-black text-red-400 text-lg"; btn.innerText = `انتظر ${timeStr}`; btn.disabled = true; packet.style.opacity = "0.4"; } else { document.getElementById('timer-display').innerText = "متاح"; document.getElementById('timer-display').className = "font-black text-green-400 text-lg"; btn.innerText = "افتح الكيس الآن"; btn.disabled = false; packet.style.opacity = "1"; } }
+            function renderTasks() { const container = document.getElementById('tasks-container'); if (!appSettings.tasks) return; container.innerHTML = appSettings.tasks.map(t => { const done = userData.completedTasks?.includes(t.id); return `<div class="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center shadow-lg"><div class="flex items-center gap-4"><span class="text-3xl">${t.icon}</span><div><p class="font-bold text-sm">${t.name}</p><p class="text-xs text-green-500 font-bold">+${t.bonus.toFixed(2)}$</p></div></div><button onclick="doTask('${t.id}', ${t.bonus}, '${t.url}')" ${done ? 'disabled' : ''} class="px-5 py-2 rounded-xl text-[10px] font-black ${done ? 'bg-green-500/20 text-green-500' : 'bg-white text-black'}">${done ? 'تم' : 'تنفيذ'}</button></div>`; }).join(''); }
+            function renderStore() { const container = document.getElementById('store-container'); container.innerHTML = STORE.map(s => `<div class="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center"><div class="flex items-center gap-3"><span class="text-3xl">${s.icon}</span><span class="font-bold text-sm">${s.name}</span></div><button onclick="requestWithdraw(${s.price}, '${s.name}')" class="bg-green-600 text-white px-5 py-2 rounded-xl text-[10px] font-black">${s.price.toFixed(2)}$</button></div>`).join(''); }
 
-            function updateUI() {
-                document.getElementById('balance-display').innerText = `${(userData.balance || 0).toFixed(2)}$`;
-                renderTasks();
-                renderStore();
-                checkTimer();
-            }
-
-            function checkTimer() {
-                const now = Date.now();
-                const diff = now - (userData.lastOpenTime || 0);
-                const remaining = Math.max(0, COOLDOWN - diff);
-                const btn = document.getElementById('main-action-btn');
-                const packet = document.getElementById('open-packet-btn');
-                if (remaining > 0) {
-                    const mins = Math.floor(remaining / 60000);
-                    const secs = Math.floor((remaining % 60000) / 1000);
-                    const timeStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                    document.getElementById('timer-display').innerText = timeStr;
-                    document.getElementById('timer-display').className = "font-black text-red-400 text-lg";
-                    btn.innerText = `انتظر ${timeStr}`;
-                    btn.disabled = true;
-                    packet.style.opacity = "0.4";
-                } else {
-                    document.getElementById('timer-display').innerText = "متاح";
-                    document.getElementById('timer-display').className = "font-black text-green-400 text-lg";
-                    btn.innerText = "افتح الكيس الآن";
-                    btn.disabled = false;
-                    packet.style.opacity = "1";
-                }
-            }
-
-            function renderTasks() {
-                const container = document.getElementById('tasks-container');
-                container.innerHTML = TASKS.map(t => {
-                    const done = userData.completedTasks?.includes(t.id);
-                    return `<div class="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center shadow-lg"><div class="flex items-center gap-4"><span class="text-3xl">${t.icon}</span><div><p class="font-bold text-sm">${t.name}</p><p class="text-xs text-green-500 font-bold">+${t.bonus.toFixed(2)}$</p></div></div><button onclick="doTask('${t.id}', ${t.bonus}, '${t.url}')" ${done ? 'disabled' : ''} class="px-5 py-2 rounded-xl text-[10px] font-black ${done ? 'bg-green-500/20 text-green-500' : 'bg-white text-black'}">${done ? 'تم' : 'تنفيذ'}</button></div>`;
-                }).join('');
-            }
-
-            function renderStore() {
-                const container = document.getElementById('store-container');
-                container.innerHTML = STORE.map(s => `<div class="bg-slate-900/50 p-4 rounded-3xl border border-white/5 flex justify-between items-center"><div class="flex items-center gap-3"><span class="text-3xl">${s.icon}</span><span class="font-bold text-sm">${s.name}</span></div><button onclick="requestWithdraw(${s.price}, '${s.name}')" class="bg-green-600 text-white px-5 py-2 rounded-xl text-[10px] font-black">${s.price.toFixed(2)}$</button></div>`).join('');
-            }
-
-            // --- نقطة بداية التطبيق ---
-            function init() {
-                loadData();
+            async function initializeUserSession() {
+                loadLocalData();
                 updateUI();
-                document.getElementById('open-packet-btn').onclick = window.handleOpen;
-                document.getElementById('main-action-btn').onclick = window.handleOpen;
-                setInterval(checkTimer, 1000);
-                document.getElementById('loading-screen').classList.add('hidden');
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUser = user;
+                        document.getElementById('loading-text').innerText = 'جاري جلب الإعدادات...';
+                        try {
+                            const settingsSnap = await getDoc(doc(db, "configs", "app-settings"));
+                            if (settingsSnap.exists()) { appSettings = settingsSnap.data(); } else { console.error("مستند الإعدادات 'app-settings' غير موجود!"); document.getElementById('loading-text').innerText = 'خطأ في الإعدادات.'; return; }
+                            await syncRemoteData();
+                            updateUI();
+                            document.getElementById('loading-screen').classList.add('hidden');
+                            setInterval(checkTimer, 1000);
+                        } catch (e) { console.error("Error fetching settings:", e); document.getElementById('loading-text').innerText = 'خطأ في جلب الإعدادات.'; }
+                    } else {
+                        signInAnonymously(auth).catch(err => { console.error("Anonymous sign-in failed:", err); document.getElementById('loading-text').innerText = 'فشل تسجيل الدخول.'; });
+                    }
+                });
             }
-
-            init();
-        });
+            initializeUserSession();
+        }
     </script>
 </body>
 </html>
